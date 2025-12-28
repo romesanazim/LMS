@@ -40,6 +40,7 @@ Route::middleware(['auth:api'])->group(function () {
         Route::post('me', [AuthController::class, 'me']);
     });
 
+    Route::post('/admin/send-email', [AdminController::class, 'sendEmail']);
     // TEACHER ROUTES
     Route::prefix('teacher')->group(function () {
         Route::get('/my-courses', [CourseController::class, 'myCourses']);

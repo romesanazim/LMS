@@ -8,6 +8,10 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\QuizAttempt;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AdminNotification;
 
 class AdminController extends Controller
 {
@@ -24,6 +28,20 @@ class AdminController extends Controller
             ]
         ]);
     }
+
+    public function sendEmail(Request $request) {
+    $request->validate([
+        'student_id' => 'required|exists:users,id',
+        'subject' => 'required|string|max:255',
+        'message' => 'required|string',
+    ]);
+
+    $student = User::find($request->student_id);
+    Mail::to($student->email)->send(new AdminNotification($request->subject, $request->message));
+
+    return response()->json(['status' => true, 'message' => 'Email sent successfully!']);
+}
+
 
     // 2. DELETE COURSE (Moderation)
     public function deleteCourse($id)
@@ -138,30 +156,32 @@ class AdminController extends Controller
         return response()->json(['status' => true, 'data' => $students]);
     }
 
-    public function createStudent(Request $request)
-    {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6'],
-            'roll_number' => ['nullable', 'string', 'max:255'],
-            'program' => ['nullable', 'string', 'max:255'],
-            'batch' => ['nullable', 'string', 'max:255'],
-        ]);
+    public function createStudent(Request $request) {
+    $data = $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+        'password' => ['required', 'string', 'min:6'],
+        'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'], // 2MB max
+        // ... other fields
+    ]);
 
-        $student = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => 'student',
-            'is_active' => true,
-            'roll_number' => $data['roll_number'] ?? null,
-            'program' => $data['program'] ?? null,
-            'batch' => $data['batch'] ?? null,
-        ]);
-
-        return response()->json(['status' => true, 'message' => 'Student created', 'data' => $student], 201);
+    if ($request->hasFile('profile_picture')) {
+        $path = $request->file('profile_picture')->store('profiles', 'public');
+        $data['profile_picture'] = $path;
     }
+
+    $student = User::create([
+        'name' => $data['name'],
+        'email' => $data['email'],
+        'password' => Hash::make($data['password']),
+        'role' => 'student',
+        'is_active' => true,
+        'profile_picture' => $data['profile_picture'] ?? null,
+        // ... other fields
+    ]);
+
+    return response()->json(['status' => true, 'message' => 'Student created', 'data' => $student], 201);
+}
 
     public function updateStudent(Request $request, $id)
     {
@@ -355,3 +375,4 @@ class AdminController extends Controller
         return response()->json(['status' => true, 'message' => 'Enrollment removed']);
     }
 }
+
