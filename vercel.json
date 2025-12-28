@@ -4,10 +4,6 @@
     "functions": {
         "api/index.php": { "runtime": "vercel-php@0.7.1" }
     },
-    "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.php" },
-    { "source": "/(.*)", "destination": "/api/index.php" }
-  ],
    "routes": [
         {
             "src": "/build/(.*)",
@@ -32,7 +28,8 @@
         {
             "src": "/(.*)",
             "dest": "/api/index.php"
-        }
+        },
+        { "src": "/(.*)", "dest": "/api/index.php" }
     ],
     
     "env": {
